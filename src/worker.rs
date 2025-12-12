@@ -36,10 +36,10 @@ pub fn run_worker(listener: &TcpListener, settings: &Settings) -> io::Result<()>
             continue;
         }
 
-        if let Some(rev) = pollfds[0].revents() {
-            if rev.contains(PollFlags::POLLIN) {
-                accept_all(listener, &mut conns, settings.read_chunk)?;
-            }
+        if let Some(rev) = pollfds[0].revents()
+            && rev.contains(PollFlags::POLLIN)
+        {
+            accept_all(listener, &mut conns, settings.read_chunk)?;
         }
 
         for pfd in pollfds.iter().skip(1) {

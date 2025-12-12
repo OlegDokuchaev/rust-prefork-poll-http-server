@@ -43,17 +43,17 @@ fn spawn_workers(listener: &TcpListener, settings: &Settings) -> io::Result<Vec<
 fn wait_all_children(mut children: Vec<Pid>) -> io::Result<()> {
     while !children.is_empty() {
         match waitpid(None, None) {
-            Ok(WaitStatus::Exited(pid, status)) => {
-                eprintln!("[parent] child {pid} exited with status={status}");
-                children.retain(|&p| p != pid);
-            }
-            Ok(WaitStatus::Signaled(pid, sig, _)) => {
-                eprintln!("[parent] child {pid} killed by {sig}");
-                children.retain(|&p| p != pid);
-            }
-            Ok(WaitStatus::Stopped(_, _))
-            | Ok(WaitStatus::Continued(_))
-            | Ok(WaitStatus::StillAlive) => {}
+            Ok(status) => match status {
+                WaitStatus::Exited(pid, code) => {
+                    eprintln!("[parent] child {pid} exited with status={code}");
+                    children.retain(|&p| p != pid);
+                }
+                WaitStatus::Signaled(pid, sig, _) => {
+                    eprintln!("[parent] child {pid} killed by {sig}");
+                    children.retain(|&p| p != pid);
+                }
+                _ => {}
+            },
             Err(Errno::EINTR) => continue,
             Err(e) => return Err(Error::from(e)),
         }
