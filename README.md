@@ -6,19 +6,20 @@ Minimal static HTTP server showcasing a prefork model with `poll()`-based multip
 Features
 --------
 - Prefork master/worker model; each worker handles multiple sockets via `poll()`.
-- `GET` and `HEAD` with correct `Content-Length`; 405 for other methods.
-- HTML served from a configured file path (no built-in fallback).
+- `GET`/`HEAD` with correct `Content-Length`; 405 for other methods.
+- Static files served from configurable `doc_root`; 403 for forbidden paths, 404 for missing files.
+- No built-in fallback HTML: place your own `index.html` under `doc_root`.
 - Non-blocking sockets end-to-end.
 - Make targets for fmt/clippy; GitHub Actions CI for linting.
 
 Architecture (high level)
 -------------------------
-- `src/main.rs` — load settings, init HTML, bind listener, call `server::run`.
+- `src/main.rs` — load settings, bind listener, call `server::run`.
 - `src/config.rs` — `Settings` loaded from env (`SERVER__*`).
-- `src/page.rs` — one-time HTML load into memory.
 - `src/server.rs` — prefork + child supervision.
 - `src/worker.rs` — `poll()` loop, accepts and dispatches to connections.
 - `src/conn.rs` — per-connection read/parse/write state.
+- `src/static_files.rs` — secure path resolution + file read (GET/HEAD).
 - `src/handler.rs`, `src/http.rs` — request parsing and HTTP responses.
 
 Configuration (env vars, required)
@@ -28,7 +29,7 @@ SERVER__ADDR=0.0.0.0:8080
 SERVER__WORKERS=4
 SERVER__POLL_TIMEOUT_MS=1000
 SERVER__READ_CHUNK=4096
-SERVER__HTML_PATH=public/index.html
+SERVER__DOC_ROOT=public
 ```
 
 Running locally
@@ -40,7 +41,7 @@ SERVER__ADDR=0.0.0.0:8080
 SERVER__WORKERS=4
 SERVER__POLL_TIMEOUT_MS=1000
 SERVER__READ_CHUNK=4096
-SERVER__HTML_PATH=public/index.html
+SERVER__DOC_ROOT=public
 EOF
 
 make run
@@ -58,7 +59,8 @@ CI
 
 Notes / limits
 --------------
-- HTML must exist at `SERVER__HTML_PATH`; startup fails otherwise.
+- Put your files under `SERVER__DOC_ROOT`; 403 for attempts to escape root or open non-files, 404 if missing.
+- HEAD returns no body, only headers with correct `Content-Length`.
 - Only `GET`/`HEAD`; no range/TLS/directory listing.
-- Focused on demonstrating low-level networking (prefork + poll).***
+- Focused on demonstrating low-level networking (prefork + poll).
 

@@ -1,5 +1,6 @@
 use config::{Config, ConfigError, Environment};
 use serde::Deserialize;
+use std::path::PathBuf;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
@@ -7,7 +8,7 @@ pub struct Settings {
     pub workers: usize,
     pub poll_timeout_ms: u16,
     pub read_chunk: usize,
-    pub html_path: String,
+    pub doc_root: PathBuf,
 }
 
 impl Settings {

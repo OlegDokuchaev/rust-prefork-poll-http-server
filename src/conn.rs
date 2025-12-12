@@ -2,18 +2,20 @@ use crate::handler::handle_request;
 use crate::http;
 use std::io::{self, Read, Write as IoWrite};
 use std::net::TcpStream;
+use std::path::PathBuf;
 
-pub struct Conn {
+pub struct Conn<'a> {
     stream: TcpStream,
     read_buf: Vec<u8>,
     write_buf: Vec<u8>,
     write_pos: usize,
     wrote_response: bool,
     read_chunk: usize,
+    doc_root: &'a PathBuf,
 }
 
-impl Conn {
-    pub fn new(stream: TcpStream, read_chunk: usize) -> Self {
+impl<'a> Conn<'a> {
+    pub fn new(stream: TcpStream, read_chunk: usize, doc_root: &'a PathBuf) -> Self {
         Self {
             stream,
             read_buf: Vec::with_capacity(read_chunk),
@@ -21,6 +23,7 @@ impl Conn {
             write_pos: 0,
             wrote_response: false,
             read_chunk,
+            doc_root,
         }
     }
 
@@ -39,7 +42,7 @@ impl Conn {
 
                     if !self.wrote_response && self.read_buf.windows(4).any(|w| w == b"\r\n\r\n") {
                         let response = match http::parse_request(&self.read_buf) {
-                            Ok(req) => handle_request(&req),
+                            Ok(req) => handle_request(&req, self.doc_root),
                             Err(e) => http::bad_request(&e.to_string()),
                         }?;
 
