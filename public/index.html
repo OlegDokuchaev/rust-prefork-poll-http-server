@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>prefork + poll</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 20% 20%, #e4edff, #f7f9fc 40%, #eef3ff 70%);
+    }
+    main {
+      padding: 2rem 2.5rem;
+      border-radius: 16px;
+      background: #ffffffcc;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(6px);
+      max-width: 720px;
+    }
+    h1 { margin: 0 0 0.5rem; font-size: 2rem; letter-spacing: -0.02em; }
+    p { margin: 0.25rem 0; line-height: 1.5; color: #1f2937; }
+    code { padding: 0.2rem 0.4rem; border-radius: 6px; background: #1118270d; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Rust prefork + poll static server</h1>
+    <p>Default landing page. Put your files into <code>public/</code> and they will be served over HTTP.</p>
+    <p>Only <code>GET</code> and <code>HEAD</code> are supported; others return 405.</p>
+  </main>
+</body>
+</html>
+
