@@ -9,8 +9,6 @@ CARGO_CLIPPY := $(CARGO) clippy
 
 .PHONY: fmt-check clippy run
 
-test: unit integration
-
 fmt-check:
 	$(CARGO_FMT) -- --check
 
