@@ -13,7 +13,7 @@ pub struct Request<'a> {
     pub target: &'a str,
 }
 
-pub fn parse_request(buf: &[u8]) -> io::Result<Request> {
+pub fn parse_request(buf: &[u8]) -> io::Result<Request<'_>> {
     let line_end = buf
         .windows(2)
         .position(|w| w == b"\r\n")
