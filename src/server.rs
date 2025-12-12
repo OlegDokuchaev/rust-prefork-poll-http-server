@@ -52,7 +52,7 @@ fn wait_all_children(mut children: Vec<Pid>) -> io::Result<()> {
                     eprintln!("[parent] child {pid} killed by {sig}");
                     children.retain(|&p| p != pid);
                 }
-                WaitStatus::Stopped(_, _) | WaitStatus::Continued(_) | WaitStatus::StillAlive => {}
+                _ => {}
             },
             Err(Errno::EINTR) => continue,
             Err(e) => return Err(Error::from(e)),
