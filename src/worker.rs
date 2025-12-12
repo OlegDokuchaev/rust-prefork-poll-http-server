@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::io::{self, Error};
 use std::net::TcpListener;
 use std::os::fd::{AsFd, AsRawFd, BorrowedFd, RawFd};
+use std::path::PathBuf;
 
 pub fn run_worker(listener: &TcpListener, settings: &Settings) -> io::Result<()> {
     let mut conns: HashMap<RawFd, Conn> = HashMap::new();
@@ -39,7 +40,12 @@ pub fn run_worker(listener: &TcpListener, settings: &Settings) -> io::Result<()>
         if let Some(rev) = pollfds[0].revents()
             && rev.contains(PollFlags::POLLIN)
         {
-            accept_all(listener, &mut conns, settings.read_chunk)?;
+            accept_all(
+                listener,
+                &mut conns,
+                settings.read_chunk,
+                &settings.doc_root,
+            )?;
         }
 
         for pfd in pollfds.iter().skip(1) {
@@ -71,10 +77,11 @@ pub fn run_worker(listener: &TcpListener, settings: &Settings) -> io::Result<()>
     }
 }
 
-fn accept_all(
+fn accept_all<'a>(
     listener: &TcpListener,
-    conns: &mut HashMap<RawFd, Conn>,
+    conns: &mut HashMap<RawFd, Conn<'a>>,
     read_chunk: usize,
+    doc_root: &'a PathBuf,
 ) -> io::Result<()> {
     loop {
         match listener.accept() {
@@ -82,7 +89,7 @@ fn accept_all(
                 stream.set_nonblocking(true)?;
                 let fd = stream.as_raw_fd();
                 eprintln!("[worker] accepted {addr}");
-                conns.insert(fd, Conn::new(stream, read_chunk));
+                conns.insert(fd, Conn::new(stream, read_chunk, doc_root));
             }
             Err(e) if e.kind() == io::ErrorKind::WouldBlock => break,
             Err(e) => return Err(e),

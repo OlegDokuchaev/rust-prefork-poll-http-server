@@ -1,15 +1,16 @@
 use std::io::{self, Error, ErrorKind, Write};
 
 #[derive(Debug, Clone)]
-pub enum Method {
+pub enum Method<'a> {
     Get,
     Head,
-    Other(String),
+    Other(&'a str),
 }
 
 #[derive(Debug, Clone)]
-pub struct Request {
-    pub method: Method,
+pub struct Request<'a> {
+    pub method: Method<'a>,
+    pub target: &'a str,
 }
 
 pub fn parse_request(buf: &[u8]) -> io::Result<Request> {
@@ -27,20 +28,17 @@ pub fn parse_request(buf: &[u8]) -> io::Result<Request> {
     let target_bytes = parts
         .next()
         .ok_or_else(|| Error::new(ErrorKind::InvalidData, "missing target"))?;
-    let _version = parts
-        .next()
-        .ok_or_else(|| Error::new(ErrorKind::InvalidData, "missing version"))?;
 
     let method = match method_bytes {
         b"GET" => Method::Get,
         b"HEAD" => Method::Head,
-        other => Method::Other(std::str::from_utf8(other).unwrap_or("UNKNOWN").to_string()),
+        other => Method::Other(std::str::from_utf8(other).unwrap_or("UNKNOWN")),
     };
 
     let raw_target = std::str::from_utf8(target_bytes)
         .map_err(|_| Error::new(ErrorKind::InvalidData, "target is not utf-8"))?;
-
     let target = raw_target.split('?').next().unwrap_or(raw_target);
+
     if !target.starts_with('/') {
         return Err(Error::new(
             ErrorKind::InvalidData,
@@ -48,17 +46,17 @@ pub fn parse_request(buf: &[u8]) -> io::Result<Request> {
         ));
     }
 
-    Ok(Request { method })
+    Ok(Request { method, target })
 }
 
 pub fn build_response(
     code: u16,
     reason: &str,
     body: &[u8],
+    declared_len: usize,
     content_type: &str,
     extra_hdrs: &[(&str, &str)],
 ) -> io::Result<Vec<u8>> {
-    let declared_len = body.len();
     let mut resp = Vec::with_capacity(256 + declared_len);
 
     write!(
@@ -79,8 +77,8 @@ pub fn build_response(
     Ok(resp)
 }
 
-pub fn ok(body: &[u8], content_type: &str) -> io::Result<Vec<u8>> {
-    build_response(200, "OK", body, content_type, &[])
+pub fn ok(body: &[u8], declared_len: usize, content_type: &str) -> io::Result<Vec<u8>> {
+    build_response(200, "OK", body, declared_len, content_type, &[])
 }
 
 pub fn bad_request(msg: &str) -> io::Result<Vec<u8>> {
@@ -88,6 +86,7 @@ pub fn bad_request(msg: &str) -> io::Result<Vec<u8>> {
         400,
         "Bad Request",
         msg.as_bytes(),
+        msg.len(),
         "text/plain; charset=utf-8",
         &[],
     )
@@ -98,6 +97,7 @@ pub fn method_not_allowed() -> io::Result<Vec<u8>> {
         405,
         "Method Not Allowed",
         b"Method Not Allowed",
+        "Method Not Allowed".len(),
         "text/plain; charset=utf-8",
         &[("Allow", "GET, HEAD")],
     )
