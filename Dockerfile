@@ -1,5 +1,5 @@
 # --- build ---
-FROM rust:1.85-slim-bookworm AS builder
+FROM rust:1.92-slim-bookworm AS builder
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
